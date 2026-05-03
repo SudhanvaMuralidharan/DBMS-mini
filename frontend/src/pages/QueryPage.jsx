@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Badge from '../components/common/Badge';
 import { useAuth } from '../context/AuthContext';
+import SQLTerminal from '../components/SQLTerminal';
 
 const QUICK_QUERIES = [
   { label: 'List patients', sql: 'SELECT * FROM patients' },
@@ -26,8 +27,12 @@ export default function QueryPage() {
   const [schema, setSchema] = useState([]);
   const [history, setHistory] = useState([]);
 
-  useEffect(() => {
+  const refreshSchema = () => {
     api.get('/api/query/schema').then(r => setSchema(r.data)).catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshSchema();
   }, []);
 
   const execute = async () => {
@@ -39,6 +44,7 @@ export default function QueryPage() {
       const { data } = await api.post('/api/query/execute', { sql });
       setResult(data);
       setHistory(h => [{ sql, ts: new Date().toISOString(), op: data.operation, rows: data.rowCount }, ...h.slice(0, 9)]);
+      refreshSchema();
     } catch (err) {
       setError(err.response?.data?.error || 'Query execution failed');
     } finally {
@@ -174,6 +180,8 @@ export default function QueryPage() {
                 )}
               </div>
             )}
+
+            <SQLTerminal onRefreshSchema={refreshSchema} />
 
             {history.length > 0 && (
               <div className="card">

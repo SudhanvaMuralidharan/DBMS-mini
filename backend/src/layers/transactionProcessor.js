@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const database = require('../config/database');
 const auditLogger = require('./auditLogger');
 
 const WRITE_OPS = ['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER'];
@@ -44,7 +44,7 @@ class TransactionProcessor {
   _captureState(tableName, operation) {
     if (!tableName || operation === 'SELECT' || operation === 'CREATE') return null;
     try {
-      return db.prepare(`SELECT * FROM ${tableName} LIMIT 200`).all();
+      return database.db.prepare(`SELECT * FROM ${tableName} LIMIT 200`).all();
     } catch { return null; }
   }
 
@@ -63,10 +63,10 @@ class TransactionProcessor {
     try {
       let result, afterState = null, rowCount = 0;
       if (operation === 'SELECT') {
-        result = db.prepare(sql).all();
+        result = database.db.prepare(sql).all();
         rowCount = result.length;
       } else {
-        const info = db.prepare(sql).run();
+        const info = database.db.prepare(sql).run();
         rowCount = info.changes;
         result = { changes: info.changes, lastInsertRowid: info.lastInsertRowid };
         afterState = this._captureState(tableName, operation);
@@ -85,12 +85,12 @@ class TransactionProcessor {
   }
 
   getSchema() {
-    const tables = db.prepare(
+    const tables = database.db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
     ).all();
     return tables.map(({ name }) => {
-      const cols = db.prepare(`PRAGMA table_info(${name})`).all();
-      const count = db.prepare(`SELECT COUNT(*) as c FROM ${name}`).get().c;
+      const cols = database.db.prepare(`PRAGMA table_info(${name})`).all();
+      const count = database.db.prepare(`SELECT COUNT(*) as c FROM ${name}`).get().c;
       return { name, columns: cols, rowCount: count };
     });
   }

@@ -1,9 +1,14 @@
-const { db } = require('../config/database');
+const database = require('../config/database');
 const accessControl = require('../layers/accessControl');
 
 async function seedDatabase() {
+  const isSeeded = database.db.prepare('SELECT value FROM system_config WHERE key = ?').get('seeded');
+  if (isSeeded && isSeeded.value === 'true') {
+    return;
+  }
+
   // Users
-  const adminExists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
+  const adminExists = database.db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
   if (!adminExists) {
     await accessControl.createUser('admin',   'admin123',   'admin',   'admin@auditdbms.io');
     await accessControl.createUser('analyst', 'analyst123', 'analyst', 'analyst@auditdbms.io');
@@ -12,8 +17,8 @@ async function seedDatabase() {
   }
 
   // Patients
-  if (!db.prepare('SELECT id FROM patients LIMIT 1').get()) {
-    const ins = db.prepare('INSERT INTO patients (patient_id,name,date_of_birth,diagnosis,medication,physician) VALUES (?,?,?,?,?,?)');
+  if (!database.db.prepare('SELECT id FROM patients LIMIT 1').get()) {
+    const ins = database.db.prepare('INSERT INTO patients (patient_id,name,date_of_birth,diagnosis,medication,physician) VALUES (?,?,?,?,?,?)');
     [
       ['P-001','Eleanor Vance','1962-03-14','Hypertension','Lisinopril 10mg','Dr. Ramesh'],
       ['P-002','Marcus Chen','1978-07-22','Type 2 Diabetes','Metformin 500mg','Dr. Patel'],
@@ -25,8 +30,8 @@ async function seedDatabase() {
   }
 
   // Financial records
-  if (!db.prepare('SELECT id FROM financial_records LIMIT 1').get()) {
-    const ins = db.prepare('INSERT INTO financial_records (record_id,account_number,transaction_type,amount,currency,counterparty,status) VALUES (?,?,?,?,?,?,?)');
+  if (!database.db.prepare('SELECT id FROM financial_records LIMIT 1').get()) {
+    const ins = database.db.prepare('INSERT INTO financial_records (record_id,account_number,transaction_type,amount,currency,counterparty,status) VALUES (?,?,?,?,?,?,?)');
     [
       ['TXN-001','ACC-8821','WIRE_TRANSFER', 125000.00,'USD','Apex Trading LLC','COMPLETED'],
       ['TXN-002','ACC-3345','ACH_DEBIT',       4200.50,'USD','Utility Corp','COMPLETED'],
@@ -38,8 +43,8 @@ async function seedDatabase() {
   }
 
   // Employees
-  if (!db.prepare('SELECT id FROM employees LIMIT 1').get()) {
-    const ins = db.prepare('INSERT INTO employees (employee_id,name,department,role,salary) VALUES (?,?,?,?,?)');
+  if (!database.db.prepare('SELECT id FROM employees LIMIT 1').get()) {
+    const ins = database.db.prepare('INSERT INTO employees (employee_id,name,department,role,salary) VALUES (?,?,?,?,?)');
     [
       ['EMP-001','Alice Mercer','Engineering','Senior Engineer',145000],
       ['EMP-002','Bob Hendricks','Finance','CFO',280000],
@@ -49,6 +54,8 @@ async function seedDatabase() {
     ].forEach(r => ins.run(...r));
     console.log('[Seed] Employees seeded');
   }
+
+  database.db.prepare('INSERT OR REPLACE INTO system_config (key, value) VALUES (?, ?)').run('seeded', 'true');
 }
 
 module.exports = { seedDatabase };

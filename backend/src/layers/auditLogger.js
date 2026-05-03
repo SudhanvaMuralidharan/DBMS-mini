@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { db } = require('../config/database');
+const database = require('../config/database');
 const blockchain = require('../blockchain/Blockchain');
 const { generateHash } = require('../blockchain/HashGenerator');
 
@@ -25,7 +25,7 @@ class AuditLogger {
 
     const block = blockchain.addBlock(blockData);
 
-    db.prepare(`
+    database.db.prepare(`
       INSERT INTO audit_logs
         (transaction_id, operation, table_name, user_id, username, query,
          before_state, after_state, row_count, status, error_message,
@@ -53,13 +53,13 @@ class AuditLogger {
     if (endDate)    { conds.push('timestamp <= ?');      params.push(endDate); }
 
     const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
-    const rows = db.prepare(`SELECT * FROM audit_logs ${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
-    const { count } = db.prepare(`SELECT COUNT(*) as count FROM audit_logs ${where}`).get(...params);
+    const rows = database.db.prepare(`SELECT * FROM audit_logs ${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+    const { count } = database.db.prepare(`SELECT COUNT(*) as count FROM audit_logs ${where}`).get(...params);
     return { logs: rows, total: count };
   }
 
   getLogById(id) {
-    return db.prepare('SELECT * FROM audit_logs WHERE id = ?').get(id);
+    return database.db.prepare('SELECT * FROM audit_logs WHERE id = ?').get(id);
   }
 
   verifyLog(id) {
