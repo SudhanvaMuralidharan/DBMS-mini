@@ -9,6 +9,11 @@
     "start:backend": "cd backend && npm start",
     "build": "cd frontend && npm install && npm run build"
   },
-  "keywords": ["blockchain", "audit", "dbms", "security"],
+  "keywords": [
+    "blockchain",
+    "audit",
+    "dbms",
+    "security"
+  ],
   "license": "MIT"
 }

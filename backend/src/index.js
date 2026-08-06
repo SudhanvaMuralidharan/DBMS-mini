@@ -5,12 +5,17 @@ const database = require('./config/database');
 const { seedDatabase } = require('./utils/seedData');
 const blockchain = require('./blockchain/Blockchain');
 const { authenticate } = require('./middleware/authenticate');
+const sse = require('./utils/sse');
+const { startTerminalInput } = require('./utils/terminalInput');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '1mb' }));
+
+// Real-time events stream
+app.get('/api/events', sse.registerClient);
 
 // Routes
 app.use('/api/auth',       require('./routes/auth'));
@@ -35,7 +40,11 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', ts: new Date().to
 async function start() {
   database.initializeDatabase();
   await seedDatabase();
-  app.listen(PORT, () => console.log(`[Server] Running on http://localhost:${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`[Server] Running on http://localhost:${PORT}`);
+    // Start standard input reader for backend SQL terminal commands
+    startTerminalInput();
+  });
 }
 
 start().catch(console.error);

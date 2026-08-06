@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import Sidebar from './components/Layout/Sidebar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -31,10 +32,12 @@ function ProtectedLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/*"     element={<ProtectedLayout />} />
-      </Routes>
+      <ToastProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*"     element={<ProtectedLayout />} />
+        </Routes>
+      </ToastProvider>
     </AuthProvider>
   );
 }

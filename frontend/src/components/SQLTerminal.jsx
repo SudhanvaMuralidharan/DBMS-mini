@@ -16,6 +16,53 @@ const SQLTerminal = ({ onRefreshSchema }) => {
     }
   }, [history]);
 
+  useEffect(() => {
+    const handleTerminalQuery = (e) => {
+      const q = e.detail;
+      
+      if (q.success) {
+        const outputLines = [
+          { type: 'command', content: `${q.sql} [from Backend Terminal]` },
+          { type: 'success', content: `✔ Success (Operation: ${q.operation} | Rows affected/returned: ${q.rowCount})` }
+        ];
+
+        // Format and show returned data if it was a SELECT query
+        if (Array.isArray(q.data) && q.data.length > 0) {
+          // Pretty print the returned dataset as structured JSON array
+          outputLines.push({ 
+            type: 'output', 
+            content: `Result Set:\n${JSON.stringify(q.data, null, 2)}` 
+          });
+        } else if (Array.isArray(q.data) && q.data.length === 0) {
+          outputLines.push({ type: 'output', content: 'Empty set returned.' });
+        }
+
+        if (q.auditTrail) {
+          outputLines.push({ 
+            type: 'success', 
+            content: `Block #${q.auditTrail.blockIndex} created on blockchain. Hash: ${q.auditTrail.blockHash.substring(0, 24)}...` 
+          });
+        }
+
+        setHistory(prev => [...prev, ...outputLines]);
+
+        // Refresh schema sidebar automatically if this query mutated database structures
+        if (onRefreshSchema) {
+          onRefreshSchema();
+        }
+      } else {
+        setHistory(prev => [
+          ...prev,
+          { type: 'command', content: `${q.sql} [from Backend Terminal]` },
+          { type: 'error', content: `❌ Error: ${q.error}` }
+        ]);
+      }
+    };
+
+    window.addEventListener('terminal-query', handleTerminalQuery);
+    return () => window.removeEventListener('terminal-query', handleTerminalQuery);
+  }, [onRefreshSchema]);
+
   const handleCommand = async (e) => {
     if (e.key !== 'Enter' || !input.trim() || loading) return;
 
